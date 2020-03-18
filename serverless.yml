@@ -1,0 +1,87 @@
+service:
+  name: aws-function-lambda
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+
+# Add the serverless-webpack plugin
+plugins:
+  - serverless-webpack
+  - serverless-offline
+provider:
+  name: aws
+  stage: dev
+  region: ap-southeast-1
+  runtime: nodejs12.x
+  role: arn:aws:iam::525754282510:role/lambda-role
+  environment:
+    MUSIC_TABLE: music-${opt:stage, self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - ses:SendEmail
+      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/music-*"
+
+functions:
+  
+  create:
+    handler: handler.create
+    events:
+      - http:
+          method: post
+          path: musics
+  get:
+    handler: handler.get
+    events:
+      - http:
+          method: get
+          path: musics
+  getById:
+    handler: handler.getById
+    events:
+      - http:
+          method: get
+          path: music/{id}
+  update:
+    handler: handler.update
+    events:
+      - http:
+          method: put
+          path: music/{id}
+  delete:
+    handler: handler.deletea
+    events:
+      - http:
+          method: delete
+          path: music/{id}
+        
+resources:
+  Resources:
+    CandidateDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: "id"
+            AttributeType: "S"
+        KeySchema:
+          -
+            AttributeName: "id"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: ${self:provider.environment.MUSIC_TABLE}
+          
